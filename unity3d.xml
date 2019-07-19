@@ -1,0 +1,597 @@
+<!-- unity3d-record -->
+	<!-- 关于gameObject的实例: -->
+		1.什么是GameObject
+			游戏对象，作为一个个游戏场景的基类。通过绑定组件或者脚本实现代码对游戏对象的控制
+		2.gameObject中的变量
+			activeSelf:游戏中的对象是否被局部激活
+			activeInHierarchy:游戏中的对象是否被激活
+			layer:游戏对象所在的层，范围在1-31之间
+			tag:这个游戏对象的标签(有默认的也有自定义的)
+			scene:场景对象
+			transform：附加于这个对象的场景变换(该游戏对象在整个世界的坐标以及物体的转换角度)
+		
+		3.unity3d中的虚拟化操作
+			unity3d中的GameObject绑定到脚本中的全局变量中，我们称之为序列化
+			将脚本中的全局变量转换成unity3d中的GameObject，我们称之为反序列化
+
+			进行序列化绑定的对象在脚本中可以直接使用已经初始化的gameObject
+		
+		4.发送广播
+			通过调用B.sendMessage("XXX")来实现对某个对象的发送广播
+
+			GameObject类型的B对象调用sendMessage方法后,unity3d将会在名字为B的GameObject下的组件中去寻找对应名称的组件。
+			如果没有找到，将会报错。
+		
+			示例:
+			public class Bordercast:MonoBehavior{
+				public GameObject demo;
+
+				void update(){
+					GameObject.Find("demo").sendMessage("GetMessage");
+				}
+				//对名字为demo的对象发出信息
+
+			}
+		5.关于对象查找
+			Find():通过名称查找对象,返回单个对象
+				注意:Find查找是从层级栏中从下往上找的，如果有两个同名的对象，则返回处于层级栏中最下方的对象
+			FindGameObjectsWithTag():通过给对象设定的tag名称去查找，返回的是一个GameObject的数组
+			FindGameObjectWithTag():同上，返回的是一个GameObject对象
+		6.关于GameObject和gameObject
+			GameObject是一个类型；gameObject是一个已经初始化的对象，可以直接使用。
+
+	关于Component
+		1.什么是Component
+			游戏对象身上绑定的各种组件，功能，种类多种多样。有些组件是从游戏对象创建时自带的，有些是我们通过操作进行绑定
+		2.获取对象上的组件：
+			GameObject.getComponent:返回对象中一个type类型的组件，如果没有则返回null
+			GameObject.getComponents:返回对象中所有type类型的组件
+			GameObject.getComponentsInParent：返回对象的父对象中所有type类型的组件
+
+			tips:指定的类型需要使用泛型
+
+	<!-- 关于Monobehavior -->
+		1.生命周期
+			整个gameObject的声明周期--即MonoBehavior的生命周期(周期时长为一帧)
+				public class NewBeHaviour : MonoBeHaviour{
+
+					void Awake(){}	---第一个执行的方法，用于创建组件对象
+
+					void Start(){}	---继Awake()执行，用于初始化对象
+
+					void OnEnable(){}	---当对象被激活时执行的代码
+
+					void OnDisable(){}	---当对象被隐藏时执行的代码
+
+					void Update(){}	-- 持续更新函数体的内容
+
+					void FixUpdate(){}	--从游戏开始后经过固定的时间执行更新
+
+					void LateUpdate(){}	---进行延时更新(一般在Update执行完之后更新)
+
+					void OnDestroy(){}	---对象执行结束之后进行销毁
+				} 
+
+				c# 接口继承中，继承一个接口就必须要实现接口中所有的非私有方法；但是可以通过写一个abstract类继承接口做一个过度
+		2.协程
+			协程类似于线程,但又不同于线程
+			unity3d中,所有的进程都是单线程,我们通过协程来模拟多线程的操作
+
+			所有的协程都是在对象执行到LateUpdate()以后才查看是否有挂起的协程
+			
+			案例:
+			public class Test{
+				void Start(){
+					//StartCoroutine(Itest());
+					StartCoroutine("Itest");
+				}
+
+				IEnumerator Itest(){
+					yield return null;			
+					Debug.Log("demo");
+				}
+
+				//unity对象在Start方法中执行协程，只要执行到yield return ...时，该协程就会挂起。之后对象将会继续执行，知道执行完所有的
+				LateUpdate()，将会在底层查找是否有挂起的协程，如果有，就开始执行[对应的案例就会打出demo]。
+			}
+
+	<!-- 常用类: -->
+		Time
+			Time.deltaTime:当前帧运行占用的时间
+			Time.realtimeSinceStartup:从游戏开始到现在的总时间
+			Time.time:从游戏开始到现在所用的时间
+			Time.Scale:时间的缩放，可用于减缓物体运动的效果
+			
+			"Time.Scaletime = 0;" 表示游戏暂停
+		Application--指的是游戏应用程序本身
+
+		Input--通过输入的按键去执行不同的触发事件
+			Input.getKeyDown(KeyCode.?)：按下某一个键时执行
+			Input.getKeyUp(KeyCode.?)：按下并松开某个键时执行
+			Input.getKey(KeyCode.?)：获取到某个键就执行
+									[可以一直获取到某个关键key导致触发事件一直被触发]
+			Input.getAxis(string axic):通过输入某个偏移值进行事件触发
+		
+		Color--改变材质球的渲染或者gameObject的外表颜色
+		
+		Random
+			在min和max的范围中生成一个随机数:Random.Range(int min,int max);
+
+			随机取出一个数组中的数:
+				int a = new int[10];
+				return a[Random.Range(0,(a.length-1))];
+
+		AnimationCullingType:
+
+	<!-- Transform -->
+		底层中:Transform继承于Component接口和IEnumerable接口
+
+		场景中每一个gameObject都有一个transform组件。用于储存并且操控物体的位置，旋转和缩放。由于继承了迭代器IEnumerable
+		可以通过foreach进行迭代取值
+
+		transform变量:
+			1.position：储存了该GameObject在世界坐标中的位置
+			2.Localposition：储存了GameObject相对于父级对象的位置
+			3.eulerAngels:旋转作为的欧拉角度
+				关于欧拉角:用于唯一的确定定点转动明体位置的三个一组独立角参量
+			4.localEulerAngels:相对于父级对象转动的欧拉角的角度
+			5.parent：物体变换的父级
+			6.LocalScale:物体相对于父级的缩放程度
+			7.lossyScale:物体的全局缩放
+
+		transform函数:
+			1.Translate：
+				移动transform在translation上的距离--实际开发中不用
+				
+				案例:
+				public class Move : MonoBehavior{
+					public GameObject demo;
+					private float speed = 10.0f;
+
+					void Update(){
+						demo.transform.Translation(Vector3.forward*speed*Time.deltaTime); -- 物体向前移动实际位移的距离
+						demo.transform.Translation(Vector3.back*speed*Time.deltaTime);	--物体向后移动实际位移的单位
+						demo.transform.Translation(Vector3.left*speed*Time.deltaTime);	--物体向左移动实际位移的单位
+						demo.transform.Translation(Vector3.right*speed*Time.deltaTime);	--物体向右移动实际位移的单位
+						demo.transform.Translation(Vector3.down*speed*Time.deltaTime);	--物体向下移动实际位移的单位
+						demo.transform.Translation(Vector3.up*speed*Time.deltaTime);	--物体向上移动实际位移的单位
+					}
+
+				}
+			2.Rotate：
+				物体沿着某个欧拉角进行旋转
+
+				案例:
+					public class Demo:MonoBehavior{
+						public GameObject demo;
+
+						void Update(){
+							demo.transform.Rotate(Vector3.left*Time.deltaTime); 
+						}
+					}
+
+			3.RotateAround：
+				物体遵循某个欧拉角通过世界坐标的某个轴进行旋转
+
+				案例:
+					public class Demo : MonoBehavior{
+						public GameObject demo;
+
+						void Update(){
+							//按照世界坐标原点，每秒以20度进行旋转
+							demo.transform.Rotate(Vector3.zero,Vector.up,20*Time.deltaTime)
+						}
+
+			4.实现相机跟随某个对象
+				最简便的实现(不知道实际项目中会不会出问题):在世界坐标中调好相机的位置，之后将其置于对象的子物体下
+
+				在不考虑旋转的情况下: 相机的坐标 = 跟随对象的坐标 + 两个对象坐标之间的差值(Vector3类型)
+
+				常用的: Camera.current.transform.LookAt(position)
+							//当前相机一直跟随某个坐标
+
+	<!-- 坐标 -->
+		1.世界坐标 相对坐标 视口坐标 屏幕坐标
+			世界坐标:指的是unity3d中的整个世界的坐标，每个对象都有一个三维坐标值
+			相对坐标:指的是子对象相对于父对象的相对坐标
+			视口坐标:摄像机前方有一个长方形的格子(可以在编辑器看到)，以左下角为原点，进行坐标运算
+			屏幕坐标:显示器的坐标(手机,平板,电脑),以px为单位。左上角为坐标原点
+
+			坐标之间的转换--全部直译
+				Camera.main.ScreenToWorldPoint();
+				Camera.main.WorldToScreenPoint();
+				Camera.main.WorldToViewportPoint();
+				Camera.main.ViewportToWorldPoint();
+				Camera.main.ViewportToScreenPoint();
+				Camera.main.ScreenToViewportPoint();
+		
+
+		2.Vector:
+			Vector2【二元向量】,Vector3【三元向量】
+
+			变量:
+				magnitude：返回向量的长度
+				this [int index](index= 0,1,2):返回向量上x,y,z上的值
+
+			类变量:
+				zero： new Vector(0,0,0) <==> Vector.zero
+				one：  new Vector(1,1,1) <==> Vector.one 
+				forward：new Vector(0,0,1) <==> Vector.forward
+				up：	 new Vector(0,1,0) <==> Vector.up
+				right：	 new Vector(1,0,0) <==> Vector.right
+
+		3.四元数
+
+		4.关于物体的旋转
+			1.transform.Rotation(Vector3 position,float angel,Space space)
+				物体围绕自身的某个轴进行旋转
+				参数解释:
+					position：旋转的坐标
+					angel：旋转的角度
+					space： 围绕着旋转的是世界坐标还是自身坐标
+						Space.Self
+						Space.World
+					
+			2.transform.RotationAround(Vector3 position,Vector3 axis,float angel)
+				物体围绕着某个物体的某一个轴方向进行旋转
+
+				参数解释:
+					position：将要围绕着旋转的物体的世界坐标
+					axis：围绕的物体的哪个轴进行旋转
+						Vector3.up
+						Vector3.forward
+						Vector3.right
+					angel：旋转的角度
+			3.transform.LookAt(Object object)
+				物体一直看向目标
+
+	<!-- 相机-向玩家捕获和显式世界的设备 -->
+		
+		1.clearflags---用于设置相机的属性
+			skybox -- 天空盒(默认选项)  将屏幕上空的部分显示在屏幕上
+			Solid Color -- 纯色   屏幕上空的部分将显示自己设定的颜色
+			Depth Only	-- 仅深度  
+			Don't clear -- 不清除  不清除任何颜色或者深度缓存，最好与自定义着色器进行使用
+
+		2.culling mask -- 遮罩层
+			按层渲染--此属性用于按层有选择性的渲染场景中的物体。
+
+			unity3d中默认culling Mask = -1，意为渲染场景中任何层的物体
+			
+			当cullingMask==0时不渲染场景中的任何层
+
+			如果只是渲染2,3,4层的物体则可以使用如下代码
+					cullingMask=(1 << 2)+(1 << 3)+(1 << 4)来实现
+
+		3.projection---投射方式
+			透视---以透视的方式来渲染游戏对象
+				field of view:事业范围，用于控制摄像机的视角宽度以及纵向的角度尺寸
+
+			正交---摄像机将以无透视的方式对游戏对象进行渲染
+				Size:大小。用于控制正交模式摄像机的视口大小
+
+		4.Depth---深度
+			类似于H5中的z-index属性
+
+			用于表示同一个场景下不同相机的渲染顺序。较大值的摄像机将被渲染在较小值的摄像机之上
+
+		5.关于相机的移动
+			如果相机需要跟随某个物体一起移动，可以通过在LateUpdate()中将物体的坐标减去相机和物体间的坐标差
+
+			camera.transform.position = gameObject.transform.position - offset;
+
+			代码中如果想要指定主相机的话，可以直接使用:
+				Camera.main.transform.position = gameObject.transform - offset
+
+			相机移动的差值和Vector3.Lerp()
+
+	<!-- 音效组件 -->
+		1.AudioListener:用于接收声音的组件，一般绑定在main camera上
+
+		2.AudioSource:用于播放声音的组件，拥有多种属性
+			AudioClip:用于指定音源，一个AudioSource中可以有多个音源，以数组的形式表现
+			Play:播放音源
+			Stop:停止播放音源
+			Pause:暂停音源播放
+
+
+	<!-- 刚体 Rigdbody -->
+		刚体组件：必须和碰撞体Colliders一起使用，否则会发生穿过现象。碰撞体不是必须和刚体一起使用
+		
+		刚体的设置面板属性
+			mass 指物体的质量 接近0.1且不要超过10
+			drag 指物体受到的阻力,用于减缓物体的速度
+			Use Gravity:是否加入重力属性
+			Is Kinematic:是否穿过物体
+
+		刚体的移动可以通过设置速度或者给一个方向的力进行实现
+			例如
+				Rigdbody.vectity = new Vector3(x,y,z);
+				Rigdbody.addForce(Vector3.up*300);   ----给物体添加一个方向向上的力
+
+
+	<!-- 碰撞器 -- Collider -->
+		碰撞器用于描述物体可以被描述的边界，以及在碰撞过程中相互影响的效果(两个物体碰撞在一起,通过物理引擎产生类似现实的效果)
+
+		unity3d中一共有6个构造器:
+			BoxCollider			--盒碰撞器
+			SphereCollider		--椭圆碰撞器
+			CapsuleCollider		--胶囊碰撞器
+			WheelCollider		--车轮碰撞器
+			MeshCollider		--网格碰撞器
+			TerrainCollider		--地形碰撞器
+
+			性能顺序大概为:Sphere Collider > Capsule > Box Collider > Mesh Collider
+
+		碰撞器的触发函数
+			void OnCollisionEnter(Collision collision)
+
+			void OnCollisionStay(Collision collision)
+			
+			void OnCollisionExit(Collision collision)
+		
+		碰撞器的触发条件
+			必须为游戏对象绑定碰撞器，其中一个游戏对象必须拥有刚体属性且受物理影响(刚体面板上的is Kinematic不勾)
+
+		触发器的触发函数
+			void OnTriggerEnter(Collider collider)
+
+			void OnTriggerStay(Collider collider)
+			
+			void OnTriggerExit(Collider collider)
+		
+			案例:
+				当角色控制器碰撞到某个物体A的时候，该物体A消失
+
+				void OnTriggerEnter(Collider collider){
+					if(collider.transform.tag == "player"){
+						gameObject.setActive(false);
+					}
+				}
+
+	<!-- 角色控制器--CharacterController-->
+		角色控制器不会和其他物体(刚体)产生力的作用或者效果
+
+		CharacterController的移动:
+			Move(Vector3 motion);
+			SimpleMove(Vector3 motion);
+
+		绑定角色控制器的对象在发生碰撞的时候回调用特有的函数：OnControllerColliderHit(ControllerColliderHit hit)
+
+		案例：
+			 void Update() {
+	        CharacterController controller = GetComponent<CharacterController>();
+	        if (controller.isGrounded) {
+	            moveDirection = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
+	            moveDirection = transform.TransformDirection(moveDirection);
+	            moveDirection *= speed;
+	            if (Input.GetButton("Jump"))
+	                moveDirection.y = jumpSpeed;
+	        }
+	        moveDirection.y -= gravity * Time.deltaTime;
+	        controller.Move(moveDirection * Time.deltaTime);
+	    }
+
+	<!-- prefab -->
+		如何使用动态加载
+			先将预制体预先加载到内存中，之后进行实例化对象
+
+		示例
+
+		 	public class Demo : MonoBehavior{
+		 		void Awake(){
+		 			Object obj = Resources.load("Cube");
+		 			GameObject cube = GameObject.Instantiate(obj) as GameObject
+		 		}
+		 	}
+
+	<!-- 网格-mesh  -->		
+			mesh指的是模型的网格，建模就是建网格
+
+			关于uv:贴图影射到模型表面的依据。
+				关于uv坐标:表示贴图在显示器水平和垂直方向的坐标
+			
+			关于bounds:边界盒
+
+			绑骨的mesh和不绑骨的mesh
+				绑骨的mesh会生成SkinMeshRenderer一个组件，不绑骨的mesh将会生成meshRenderer和meshFiter两个组件
+
+				关于不绑骨mesh生成的组件:
+					meshRenderer【网格渲染器】:从网格过滤器提取出的网格进行渲染
+					meshFiter【网格过滤器】:用于unity模型自动生成网格信息,并自动将其传导到渲染器中
+				关于绑骨的mesh生成的组件
+					SkinMeshRenderer
+						mesh:有每一个顶点的绑定顺序，
+
+						root bone:根骨头，用于定位其他bones的位置
+
+
+	<!-- 动画-Animation Animator -->
+		1.关于Animation
+			Animation实际上是一个动画播放器
+
+			Animation-clip表示的是一个个动画资源
+
+			AnimationCullingType接口
+				在给模型导入动画资源的时候，一定要先记得将所有的clips的Gip设定成legacy(如果是导入animatior动画的话就导入legacy下面的
+			两个选项),不然的话动画就不能在模型上进行播放。
+
+			Animation在现在的游戏开发中已经不常用了，但是有些老的游戏开发中还是需要用到Animation，所以相关的知识还是需要了解
+		
+		2.Animator：对应的游戏对象上需要绑定Animator组件
+
+			使用animator的时候，绑定的对象模型和动画资源的模式选成除了legacy以外的选项(一般来说是Gerneric,如果是使用人形动作的话使用Humanoid)
+				 如果需要改变动画的播放模式，需要将Animation Type 先改成legacy之后才能够进行修改
+
+			创建模型对象，绑定animator组件，导入
+
+	<!-- UI组件简介 -->
+		UI一般用于与玩家进行互动的界面
+
+		相机的设置
+			单独创建一个相机，相机类型为depth-only，culling-mask指定为只投影tag为UI的gameObject，投影方式为正交
+
+	<!-- Ray-射线 -->
+		Ray的作用原理:当玩家点击屏幕的时候，对应的摄像机会从顶端发出一道射线，对每一个碰撞到的物体进行反应，开发者可以通过识别碰撞到的物体来编写触发函数
+
+		案例:
+			void Update(){
+				if(Input.GetMouseDown(0)){
+					Ray ray = Camera.ScreemPointToRay();
+					RaycastHit hit;
+					if(Physics.Raycast(ray,out hit)){
+						if(hit.collider.transform.gameObject.layer == 8){
+							Debug.Log("demo");
+						}
+					}
+				}
+			}
+
+	<!-- unity中的单例 -->
+		等同于java中的单例模式：一次只创建一个单例对象，持续到当前代码运行结束。
+
+		unity中的单例，可以是继承MonoBehavior接口，也可以不继承MonoBehavior接口。如果你的单例是继承MonoBehaivor接口，就必须按照unity中的单例
+		模板进行编写代码。unity中的单例模式不需要绑定对象，因为所有的单例都是在运行时自动创建的。
+
+		既然unity中可以实现单例模式，就应该可以实现对象的Ioc和Aop(亦或者是类似于Spring的框架)
+
+		频繁的使用单例模式，将提高代码的耦合性，不利于游戏项目的功能拓展以及维护，所以使用单例对象的时候需要考虑使用实机(一般来说如果当前对象
+		是要在运行时进行创建的时候就可以使用单例模式)
+
+		unity中的单例模板
+			public class Singetion{
+				private static Singetion _instance;
+
+				public static Singetion Instance{
+					get{
+						if(_instance == null){
+							//新建一个对象并绑定该脚本
+							GameObject gameObj = new GameObject();
+							gameObj.AddComponent<Singetion>();
+						}
+					}
+				}
+
+			}
+			
+		
+		注意一点：unity中所有的脚本并不是都必须继承MonoBehavior；其次，也不是说继承MonoBehavior的脚本就一定比不继承的要好，因时而异。
+					如果你需要用到MonoBehavior中的一些函数或者属性亦或者是协程的话，就需要继承MonoBehavior接口
+
+<!-- unity-UI框架-DOTween&在UI界面上做出3D效果 -->
+
+
+<!-- 回调函数以及Lambda表达式 -->
+	三个知识点:委托，事件，lambda表达式
+
+	一个委托可以绑定多个函数(绑定用+=，取消绑定用-=)
+
+	Lambda表达式公式：
+		(input-param [输入参数]) => 表达式或者语句块
+
+	关于回调函数的用法:
+		public delegate string MessageDelegate();
+		public delegate string MessgaeDelegate1();
+		public void TestDelegate(){
+			Dictionary<string,string> dictionary = new Dictionary<string,string>();
+			dictionary.add("1","Yuri");
+			dictionary.add("2","An");
+
+			MessageDelegate messageDelegate = new MessageDelegate(
+				() => {
+					foreach(var demo in dictionary){
+						if(demo.key == "1"){
+							return demo.value
+						}
+						return null;
+					}
+				}
+			);
+
+			MessageDelegate messageDelegate += (key) =>{
+				if(key==2){
+					return "demo";
+				}
+				return null;
+			};
+			String value1 = messageDelegate();
+			String value2 = messageDelegate_1("2");
+		}
+
+	容易实现，但不容易去使用。和java中的编程思想差异比较大的一个地方，也在有的博客上看到过建议用委托调用去取代反射调用。目前处于初学者状态所以
+	不能理解这个东西，只能尝试着是使用
+
+
+<!-- 关于自动寻路和组件-NavMeshAgent -->
+	1.实现自动寻路的步骤
+		step1.将不移动的静态对象设置成NavgationStatic,选择菜单中windows选项下的Navigation选项，将场景bake
+		step2.给移动的对象绑定NavMeshAgent
+		step3.编写脚本，将目标位置传给NavMeshAgent组件
+
+			_agent.SetDestination(transform.position);
+
+		可以通过射线传递鼠标指定的位置实现通过鼠标控制任务移动
+
+	2.判断对象是否通过自动寻路到达目的地
+		在update中一直检测remainingDistance的值
+
+		void Update(){
+			if(!_agent.pathpending && _agent.remainingDistance <= _agent.stopingDistance){
+				//到达目的地之后所做的行为
+			}
+		}
+
+<!-- ScriptableObject & UnityEditor -->
+如果一个类在使用时不需要继承GameObject或者不需要使用GetCompoment()获取对象上的组件，但是又想在unity中的
+层级面板进行编辑的话，可以将该类继承ScriptableObject，并通过继承UnityEditor的类进行层级面板的实例化。
+
+继承ScriptableObject的类有两种实例化方式：
+1.通过调用父类的createInstance方法进行子类的实例化.
+	例如：类DemoObject继承ScriptableObject,若要实例化类可采用如下方法
+	DemoObject demoObject = ScriptableObject.createInstance<DemoObject>();
+2.使用CreateAssetMenuAttribute注解：
+	例如：
+	[CreateAssetMenu(fileName = "",menuName = "")]
+	public void DemoObject : ScriptableObject{
+
+	}
+
+	fileName:生成的文件名
+	menuName:在菜单中生成的文件名
+
+代码实现演示：
+	//
+	public class DemoObject{
+		public string poolName;
+	    [SerializeField]
+	    private GameObject prefab;
+	    [SerializeField]
+	    private int maxNum;
+
+	    [NonSerialized]
+	    private List<GameObject> objectList = new List<GameObject>();
+	}
+
+
+	public class GameObjectEdition : ScriptableObject{
+		public List<DemoObject> demoObject = new List<DemoObject>();
+	}
+
+	public class GameObjectManager{
+		[MenuItem("Tools/ObjectManager")]
+		public void CreateObjectManager(){
+			GameObjectEdition gameObjectEdition = ScriptableObject.createInstance<GameObjectEdition>();
+			string path = "Assets/Resources/GameObjectManager.assets";
+			gameObjectEdition.createAsset(path);
+			gameObjectEdition.save();
+		}
+	}
+
+<!-- 对象池 -->
+对象池：存储对应的对象
+
+基本属性：对象池的容量，对应对象的prefab，死亡时间(超过一定的时间一直没有被人使用，将会被销毁),一次性实例化数[]，
+
+对象需求数超载之后，将先实例化的对象进行销毁，之后再创建
+
+对象池的基本实现案例：
