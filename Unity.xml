@@ -1,0 +1,78 @@
+Unity 开发
+
+Unity3d的特色：
+1.跨平台开发
+2.综合编辑
+3.资源导入
+4.一键部署
+5.脚本语言 -- 集成MonoBehaviour框架，支持C#，javascript,Boo语言
+6.单机联网编程的适配
+7.着色器
+8.地形编辑器
+9.物理特效
+10.光影
+
+
+对象池：存储对应的对象
+
+基本属性：对象池的容量，对应对象的prefab，死亡时间(超过一定的时间一直没有被人使用，将会被销毁),一次性实例化数[]，
+
+对象需求数超载之后，将先实例化的对象进行销毁，之后再创建
+
+类GameObjectPool:
+[Serializable]
+public class GameObjectPool{
+	private string name; //暂时不知道这个是干嘛的
+	private GameObject prefab;
+	private int maxAmount;
+
+	[NonSerializable]
+	private List<GameObject> goList = new List<GameObject>();
+
+	public GameObject GetInitObject(){
+		
+	}
+}
+
+
+类GameObjectPoolList:
+public class GameObjectPoolList : ScriptableObject{
+	public List<GameObjectPool> poolList;
+}
+
+类PoolManagerEditor:
+public class PoolManagerEditor{
+	[MenuItem("Manager/Create PoolList")]
+	static void CreateGameObjectPoolList(){
+		GameObjectPoolList poolList = ScriptableObject.CreateInstance<GameObjectPoolList>();
+		string path = "Assets/Resuorces/GameObjectPoolList.asset";
+		AssetDatabase.CreateAsset(poolList,path);
+		AssetDatabase.SaveAssets();
+	}
+}
+
+类PoolManager
+public class PoolManager(){
+	private static PoolManager _instance;
+	public static PoolManager Instance{
+		get{
+			if(_instance == null){
+				_instance = new PoolManager();
+			}
+			return _instance;
+		}
+	} 
+
+
+	private PoolManager(){
+
+	}
+
+}
+
+新东西：ScriptableObject，定向资源配置
+
+
+ScriptableObject: 继承自ScriptableObject的类，表示将继承该类的子类编程乐意自定义资源配置的文件
+当你需要创建一个对象但是不需要依赖GameObject或者不需要GetComponent，但是又需要在层级面板上进行编辑时，
+可以将该类继承ScriptableObject。

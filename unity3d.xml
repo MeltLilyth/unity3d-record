@@ -73,8 +73,16 @@
 				} 
 
 				c# 接口继承中，继承一个接口就必须要实现接口中所有的非私有方法；但是可以通过写一个abstract类继承接口做一个过度
+				1.算是Awake()和Start方法的一个区别
+				Awake方法：在脚本中进行实例化的时候进行调用(脚本刚刚载入MonoBehaviour)
+				Start方法：在当前脚本的任何一个Update方法被调用之前进行调用
+		
 		2.协程
-			协程类似于线程,但又不同于线程
+			协程：在主线程执行的同时额外开辟一个单独的空间去执行一段代码(这段代码就是协程)
+
+			协程类似于线程,但又不同于线程。在游戏中，除了MonoBehaviour以外的所有类都不需要使用多线程的思考方式去编写代码(
+			UnityEngine的底层已经将多线程进行封装)。
+			
 			unity3d中,所有的进程都是单线程,我们通过协程来模拟多线程的操作
 
 			所有的协程都是在对象执行到LateUpdate()以后才查看是否有挂起的协程
@@ -373,6 +381,15 @@
 	    }
 
 	<!-- prefab -->
+
+		预制体动态加载的方式：
+			1.调用Resources.Load() ：
+				自己在unity中创建的预制体需要放在Resources文件夹下 
+			2.调用GameObject.Instantiate()
+				Instantiate函数是Unity3d中进行实例化的函数，也就是一个对象进行复制操作的函数。
+				会将目标物体的子物体和子组件完全复制(新创建的对象拥有和原对象完全一样的东西，包括状态，坐标值等)
+
+
 		如何使用动态加载
 			先将预制体预先加载到内存中，之后进行实例化对象
 
@@ -428,8 +445,20 @@
 	<!-- UI组件简介 -->
 		UI一般用于与玩家进行互动的界面
 
+		关于UGUI中RectTransform
+			在代码中调整UI的位置需要获得rectTransform组件并调整anchoredPosition或者anchoredPosition3D的数值。不能使用localPostion或者position进行调整
+
+		关于NGUI和UGUI的区别：
+			1.NGUI支持静态图文混排和文字的URL超链接，UGUI不支持
+			2.NGUI RectTransform是对NGUI的Transform+Widget+Anchor的封装。
+			3.NGUI的Anchor可以相对于特定的GameObject,UGUI的Anchor只相对于父节点
+			4.NGUI是必须先打出图集才能开始做界面，制作的时候需要将图片打入图集后才能进行制作
+			
+
 		相机的设置
 			单独创建一个相机，相机类型为depth-only，culling-mask指定为只投影tag为UI的gameObject，投影方式为正交
+
+		
 
 	<!-- Ray-射线 -->
 		Ray的作用原理:当玩家点击屏幕的时候，对应的摄像机会从顶端发出一道射线，对每一个碰撞到的物体进行反应，开发者可以通过识别碰撞到的物体来编写触发函数
@@ -472,6 +501,9 @@
 					}
 				}
 
+				void Awake(){
+					_instance = this;
+				}
 			}
 			
 		
@@ -479,7 +511,7 @@
 					如果你需要用到MonoBehavior中的一些函数或者属性亦或者是协程的话，就需要继承MonoBehavior接口
 
 <!-- unity-UI框架-DOTween&在UI界面上做出3D效果 -->
-
+	DoTween上简单的方法：DoMove() DoScale()
 
 <!-- 回调函数以及Lambda表达式 -->
 	三个知识点:委托，事件，lambda表达式
@@ -488,6 +520,9 @@
 
 	Lambda表达式公式：
 		(input-param [输入参数]) => 表达式或者语句块
+	Delegate -- 委托
+	Action -- 事件
+	（）=> { } - lambda表达式
 
 	关于回调函数的用法:
 		public delegate string MessageDelegate();
@@ -541,6 +576,9 @@
 			}
 		}
 
+	寻路算法：
+	
+
 <!-- ScriptableObject & UnityEditor -->
 如果一个类在使用时不需要继承GameObject或者不需要使用GetCompoment()获取对象上的组件，但是又想在unity中的
 层级面板进行编辑的话，可以将该类继承ScriptableObject，并通过继承UnityEditor的类进行层级面板的实例化。
@@ -560,7 +598,7 @@
 	menuName:在菜单中生成的文件名
 
 代码实现演示：
-	//
+	//通过父类的ScriptableObejct的CreateInstance方法进行实例化
 	public class DemoObject{
 		public string poolName;
 	    [SerializeField]
@@ -582,16 +620,359 @@
 		public void CreateObjectManager(){
 			GameObjectEdition gameObjectEdition = ScriptableObject.createInstance<GameObjectEdition>();
 			string path = "Assets/Resources/GameObjectManager.assets";
-			gameObjectEdition.createAsset(path);
-			gameObjectEdition.save();
+			AssetDataBase.CreateAsset(gameObjectEdition,path);
+			AssetDataBase.SaveAssets();
 		}
 	}
 
 <!-- 对象池 -->
-对象池：存储对应的对象
+对象的创建(实例化)是非常消耗游戏性能的。
 
-基本属性：对象池的容量，对应对象的prefab，死亡时间(超过一定的时间一直没有被人使用，将会被销毁),一次性实例化数[]，
+对象池：存储对应的对象。创建一个对象池，一次性将实例化固定数量（>=1）的GameObject。当对象不再被使用时，将对象放回对象池中（在对应的对象池子中进行隐
+藏）。如果某一次的对象需求数超载之后，将先实例化的对象进行销毁，之后再创建
 
-对象需求数超载之后，将先实例化的对象进行销毁，之后再创建
+根据prefab的使用情况在考虑是否使用对象池进行管理
+
+基本属性：对象池的容量，对应对象的prefab，死亡时间(超过一定的时间一直没有被人使用，将会被销毁),一次性实例化数。
 
 对象池的基本实现案例：
+
+//对象池类的实现：
+[Serializable]
+public class GameObjectPool{
+	[SerializeField]
+	public string name;
+	[SerializeField]
+	private GameObject prefab;
+	[SerializeField]
+	private int maxAmount;
+
+	[NonSerialized]
+	private List<GameObject> objectList = new List<GameObject>();
+
+	//从对象池中获取一个对象
+	public GameObject GetObjectInit(){
+		foreach(GameObject demo in objectList){
+			if(demo.activeInHierarchy = false){
+				demo.setActive(true);
+				return demo;
+			}
+		}
+		//如果对象池中没有未激活的对象
+		if(objectList.Count >= maxAmount){
+			//如果对象池即将超载
+			GameObject.Destory(objectList[0]);
+			objectPool.removeAt(0);
+		}
+		//创建新的对象并放入对象池中
+		GameObject temp = GameObject.Instantiate(prefab) as GameObject;
+		objectList.Add(temp);
+
+		return temp;
+	}
+}
+
+//将对象池序列化于层级面板
+public class PoolScriptableObject : ScriptableObject{
+	private List<GameObjectPool> poolManager = new List<GameObjectPool>();
+}
+
+public class PoolManagerEditor{
+	[MenuItem("Tools/CreatePool")]
+	private static void CreatePoolManager(){
+		PoolScriptableObject poolScript = ScriptableObject.CreateInstance<PoolScriptableObject>();
+		string path = "";
+		//将对象池保存在本地的.asset文件中，可在层级面板进行编辑
+		AssetDataBase.createAsset(poolScript,path);
+		AssetDataBase.saveAssets();
+	}
+
+}
+
+//对层级面板上的对象池的管理
+public class PoolManager{
+	private static PoolManager _instance;
+
+	private Dictionary<string,GameObjectPool> poolDict = new Dictionary<string,GameObjectPool>();
+
+	private static readOnly string pathPrefix = "Assets/Resources/";
+
+	private static readOnly string pathMiddle = "PoolManager";
+
+	private static readObky string pathSuffix = ".asset";
+
+	public string Path{
+		get{
+			return pathPrefix + pathMiddle + pathSuffix ;
+		}
+	}
+
+	public static PoolManager Instance{
+		get{
+			if(_instance == null){
+				_instance = new PoolManager();
+			}
+			return _instance;
+		}
+	}
+
+	private PoolManager(){
+		this.InitPoolManager();
+	}
+
+	private void InitPoolManager(){
+		PoolScriptableObject poolScript = Resource.Load<PoolScriptableObject>(pathMiddle);
+		foreach(GameObjectPool objectPool in poolScript.objectList){
+			if(objectPool != null){
+				poolDict.Add(objectPool.name,objectPool);
+			}
+		}
+	}
+
+	public GameObject GetObjectByName(string name){
+		GameObjectPool objectPool;
+		if(poolDict.TryGetValue(name, out pool)){
+			if(pool!= null){
+				return pool.GetObjectInit();
+			}
+			UnityEngine.Debug.LogWarning("Do not return empty Object");
+			return null;
+		}
+		UnityEngine.Debug.LogWarning("Target object is not found");
+		return null;
+	}
+}
+
+上述对象池实现过程的优化：
+	1.在使用对象池的时候可以创建一个父物体，对通过对象池创建的物体进行归类。
+	2.使用两个集合分别管理未实例化的物体和实例化的物体。[刚开始运行缓慢，之后运行加快]
+
+<!-- unity工程的本地化 -->
+游戏本地化：是游戏开发好之后，只需要简单的设置[或者修改少量的代码]就能够将游戏中的关键性文字翻译成除本国外的另外一国语言
+
+代码示例：
+	
+使用MiniJson实现本地化操作（将本地化文本存储为json数据保存在本地文件）
+
+public class LocalizationManager{
+	private static LocalizationManager _instance;
+
+	public static LocalizationManager Instance{
+		get{
+			if(_instance == null){
+				_instance = new LocalizationManager();
+			}
+			return _instance;
+		}
+	}
+
+	private Dictionary<string,string> content;
+
+	private Dictionary<string,Dictionary<string,string>> allContent;
+
+	private const string path = "";
+
+	public LocalizationManager(){
+		Init();
+	}
+
+	//初始化数据
+	private void Init(){
+		if(content == null){
+			content = new Dictionary<string,string>();
+		}
+
+		if(allContent == null){
+			allContent = new Dictionary<string,Dictionary<string,string>>();
+		}
+
+		TextAsset textAsset = Resources.load(path) as TextAsset;
+		List<Object> list = Json.Deserialize("["+textAsset.text"]") as List<Object>;
+		for(int i = 0; i<list.Count ; i++){
+			Dictionary<string,Object> flag = list[i] as Dictionary<string,Object>;
+			foreach(string key in flag.Keys){
+				if(key.Equals("key")){
+					content = new Dictionary<string,string>();
+					allConent.Add(key.ToString(),content);
+				}
+				else{
+					content.Add(key,flag[key].ToString());
+				}
+			}
+		}
+	}
+
+	//刷新数据
+	public void RefreshData(){
+		allContent = null;
+		content = null;
+		Init();
+	}
+
+	//根据key查询对应的文本
+	public string GetLocalizationText(string key){
+		Dictionary<string,string> resultDict;
+		if(allContent.TryGetValue(key,out resultDict)){
+			if(resultDict != null){
+				return resultDict[GetShowLanguageType].ToString();
+			}
+		}
+		UnityEngine.Debug.LogWarning("this key is not found");
+		return null;
+	}
+
+	//根据系统语言查询显示对应的key
+	private string GetShowLanguageType(){
+		switch(Application.systemLanguage){
+			case systemLanguage.Chinese:
+			case systemLanguage.ChineseSimplify:
+				return "Chinese";
+			case systemLanguage.English:
+				return "English";
+			default:
+				return "English";
+		}
+
+	}
+
+	//添加数据到本地文件
+	public void SaveDataInLocalTxt(string path,string content){
+		using(StreamWriter streamWriter = new StreamWriter(Application.datapath+path,true,encoding:Encoding.GetEncoding("GB2312"))){
+			streamWriter.WriteLine(content);
+		}
+	}
+}
+<!-- 有限状态机 -->
+	有限状态机（FSM）,可以枚举出有限个状态，并且这些状态可以在特定的条件下进行来回切换
+
+	在不同的状态下,播放不同的动画。避免过多的使用switch-case造成的管理混乱。
+
+	游戏中的任何东西(物体的状态，游戏机制的变化[比如输赢的判断]等等)，都可以使用有限状态机进行管理。(只是针对某一个物体的状态进行编辑)
+
+	
+	编写有限状态机最重要的就是需要理清楚状态，状态id，转换条件之间的联系
+
+	转换条件需要对应一个ID，一个ID对应一个状态
+
+	//转换条件
+	public enum Transition{
+		NullTransition,
+		ShopWin,
+		MainWin
+	}
+
+	//状态Id
+	public enum UIState{
+		NullUIState,
+		isGoShop,
+		isGoMain
+	}
+
+	//状态类
+	public class FSMState{
+		private Dictionary<Transition,UIState> stateMap;
+
+		private UIState state;
+
+		public FSMState(){
+			stateMap = new Dictionary<Transition,UIState>();
+		}
+
+		public UIState State{
+			get{return state;}
+		}
+
+		public void AddState(Transition transition,UIState state){
+			if(transition.Equals(Transition.NullTransition) || state.Equals(UIState.NullState)){
+				UnityEngine.Debug.LogError("");
+				return;
+			}
+			if(stateMap.ContentsKey(transition)){
+				UnityEngine.Debug.LogWarning("");
+				return;
+			}
+			stateMap.Add(transition,state);
+		}
+
+		public void DeleteState(Transition transition){
+			if(transition.Equals(Transition.NullTransition)){
+				UnityEngine.Debug.LogError();
+				return;
+			}
+			if(!stateMap.ContainsKey(transition)){
+				UnityEngine.Debug.LogWarning("");
+				return;
+			}
+			stateMap.Remove(stateMap[transition]);
+		}
+
+		public UIState GetState(Transition transition){
+			if(transition.Equals(Transition.NullTransition)){
+				UnityEngine.Debug.LogError();
+				return;
+			}
+			return stateMap[transition];
+		}
+
+		public virtual void Show(){}
+
+		public virtual void Hide(){}
+	}
+
+	//状态管理
+	public class FSManager{
+
+		private FSMState currentState;
+		private Dictionary<UIState,FSMState> stateDict = new Dictionary<UIState,FSMState>;
+
+		private static FSManager _instance;
+		public static FSManager Instance{
+			get{
+				if(_instance == null){
+					_instance = new FSManager();
+				}
+				return _instance;
+			}
+		}
+
+		public void AddFsmState(){
+			
+		}
+
+		public void DeleteFsmState(){
+
+		}
+		
+		public void ChangeFsmState(UIState state){
+			if(state.Equals(UIState.NullState)){
+				UnityEngine.Debug.LogError("");
+				return;
+			}
+			if(!stateDict.ContainsKey(state)){
+				UnityEngine.Debug.LogError("");
+				return;
+			}
+
+			currentState.Hide();
+			currentState = stateDict[state];
+			currentState.Show();
+		}
+	}
+
+<!-- NGUI unity中ngui的使用技巧 -->
+	
+<!-- UI框架搭建 -->
+	UI框架的作用：
+		1.管理场景当中的显示面板    2.管理各个显示面板中的跳转
+	
+
+<!-- 简单的游戏加载进程制作 -->
+
+
+<!-- 游戏编程框架 strangeIoc -->
+类似于web编程的spring框架整合
+
+<!-- 场景渲染与实时处理 -->
+shader编写：
+
+顶点偏移着色器和shader语言	
