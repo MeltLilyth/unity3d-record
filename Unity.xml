@@ -76,3 +76,5 @@ public class PoolManager(){
 ScriptableObject: 继承自ScriptableObject的类，表示将继承该类的子类编程乐意自定义资源配置的文件
 当你需要创建一个对象但是不需要依赖GameObject或者不需要GetComponent，但是又需要在层级面板上进行编辑时，
 可以将该类继承ScriptableObject。
+
+		
