@@ -995,3 +995,17 @@ shader编写：
           *     
           *     可以根据mesh中三角形的顶点绘制顺序去判断三角形的相关分割
           */
+2023.6.13  -- 关于unity编辑器底层"Build And Run"  的一些逻辑记录 
+BuildPlayerWindow.CallBuildMethods(askForBuildLocation, BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
+BuildPlayerWindow.DefaultBuildMethods.BuildPlayer(buildPlayerOptions);
+
+unity底层的服务检测/目标编译平台unity是否支持
+
+string targetStringFrom = ModuleManager.GetTargetStringFrom(EditorUserBuildSettings.selectedBuildTargetGroup, options.target);
+IBuildWindowExtension buildWindowExtension = ModuleManager.GetBuildWindowExtension(targetStringFrom);
+
+bool flag9 = Directory.Exists(options.locationPathName);
+BuildReport buildReport = BuildPipeline.BuildPlayerInternalNoCheck(options.scenes, options.locationPathName, options.assetBundleManifestPath, options.targetGroup, options.target, options.subtarget, options.options, options.extraScriptingDefines, delayToAfterScriptReload);
+bool flag10 = buildReport != null;
+
+//BuildPipeline.BuildPlayerInternalNoCheck -- 这个代码是unity底层c++的代码, 现阶段可以考虑下直接调用看看生成了什么东西
