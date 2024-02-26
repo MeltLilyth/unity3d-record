@@ -1009,3 +1009,99 @@ BuildReport buildReport = BuildPipeline.BuildPlayerInternalNoCheck(options.scene
 bool flag10 = buildReport != null;
 
 //BuildPipeline.BuildPlayerInternalNoCheck -- 这个代码是unity底层c++的代码, 现阶段可以考虑下直接调用看看生成了什么东西
+
+2024.2.26 Bezier line Test 
+//正好是最近项目里面的一个课题, 做了一个demo，但是有问题, 只是一个最基本的一个思路
+
+using System.Collections;
+using System.Collections.Generic;
+using Unity.Mathematics;
+using UnityEngine;
+using Random = UnityEngine.Random; 
+
+public class SuperMissile : MonoBehaviour 
+{
+    public List<GameObject> missiles = new List<GameObject>();
+    public List<GameObject> targets = new List<GameObject>();
+
+    public GameObject missile;
+    public GameObject target;
+
+    public GameObject midTag;
+
+    private Vector3 startPos;
+    private Vector3 midPos;
+
+    private float percent = 0;//贝塞尔曲线插值参数
+    private float percentSpeed;//插值速度
+    public float speed = 0.9f;//导弹移动速度
+
+    private void Start()
+    {
+        if (missile == null || target == null) return;
+        if (midTag != null) 
+        {
+            midTag.transform.position = GetMiddlePosition(missile.transform.position, target.transform.position);
+            this.midPos = midTag.transform.position;
+        }
+        this.startPos = missile.transform.position;
+        this.percent = 0;
+        this.percentSpeed = speed / (missile.transform.position - target.transform.position).magnitude;
+
+        StartCoroutine(MoveMissile());
+    }
+
+    private IEnumerator MoveMissile()
+    {
+        while (percent < 1)
+        {
+            percent += percentSpeed * Time.deltaTime;
+            missile.transform.position = GameTools.GetBezierInp(new Vector3[3] { startPos, midPos, target.transform.position }, percent);
+            yield return null;
+        }
+    }
+
+    /// <summary>
+    /// 获取中间点
+    /// </summary>
+    private Vector3 GetMiddlePosition(Vector3 start, Vector3 end) 
+    {
+        Vector3 m = Vector3.Lerp(start, end, 0.1f);
+        Vector3 len = (target.transform.position - missile.transform.position).normalized;
+        Vector3 right = transform.right;
+
+        Vector3 normal = Vector3.Cross(len, right).normalized;
+        float rd = Random.Range(1.0f, 2.0f);
+        float curveRatio = 0.3f;
+        return m + (start - end).magnitude * curveRatio * rd * normal;
+    }
+
+}
+
+public class GameTools 
+{
+
+    public static Vector3 GetBezierInp(Vector3 p0, Vector3 p1, float t) =>
+        p0 * (1 - t) + p1 * t; 
+    
+    public static Vector3 GetBezierLerp(Vector3 p0, Vector3 p1, float t) =>
+        math.lerp(p0, p1, t);
+
+    /// <summary>
+    /// 根据贝塞尔公式计算运动轨迹
+    /// </summary>
+    public static Vector3 GetBezierInp(Vector3[] points, float t, bool lerp = false) 
+    {
+        if (points == null || points.Length < 2) { return default(Vector3); }
+        if (points.Length == 2) { return lerp ? GetBezierLerp(points[0], points[1], t) : GetBezierInp(points[0], points[1], t); }
+        Vector3[] arr = new Vector3[points.Length - 1];
+
+        for (int i = 0; i < points.Length - 1; i++) 
+        { 
+            arr[i] = lerp ? GetBezierLerp(points[i], points[i + 1], t) : GetBezierInp(points[i], points[i + 1], t);
+        }
+
+        return GetBezierInp(arr, t, lerp);
+    }
+}
+
